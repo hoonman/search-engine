@@ -8,6 +8,8 @@ def main():
     filepath = parser.filepath
     tokenizer = Tokenizer(filepath)
     tokenizer.tokenize()
+    tokenizer.compute_word_frequencies()
+    tokenizer.print_frequencies()
 
 if __name__ == "__main__":
     main()
