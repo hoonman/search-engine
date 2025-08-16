@@ -73,4 +73,7 @@ class Tokenizer:
         for token, freq in sorted_frequency_map.items():
             print(f"{token} - {freq}")
 
+    def get_frequency_map(self):
+        return self.frequency_map
+
     
