@@ -15,6 +15,7 @@ class ArgParser:
             "-f",
             type=str,
             required=True,
+            nargs="+",
             help="Path to the file to tokenize (ex. /path/to/file.txt)"
         )
 
@@ -23,10 +24,7 @@ class ArgParser:
         return self._args
 
     @property
-    def filepath(self) -> str:
+    def filepaths(self):
         if self._args is None:
             raise RuntimeError("Arguments not parsed yet. Call .parse() first.")
         return self._args.filepath
-    
-
-
