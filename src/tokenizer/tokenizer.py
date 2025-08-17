@@ -1,12 +1,15 @@
 import os
 import json
 import re
+import unicodedata
+from ..config.config import tokenizer_config
 
 class Tokenizer:
     def __init__(self, filepath):
         self.tokens = []
         self.frequency_map = {}
         self.filepath = filepath
+        self.config = tokenizer_config
 
     def tokenize(self):
         '''
@@ -26,9 +29,9 @@ class Tokenizer:
         # lowercase, alphanumeric, what else should we keep? emails? dots? (for links), 
         # before normalizing, we should consider if we should filter the emails, links,
 
-        with open(self.filepath, 'r') as f:
+        with open(self.filepath, 'r', encoding='utf-8', buffering=8192) as f:
             for line in f:
-                tokens = line.strip().split() # strips the first and last trailing whitespace and splits on any number of whitespace
+                tokens = line.strip().split()
                 for i, token in enumerate(tokens):
                     tokens[i] = self.normalize_token(token)
 
@@ -41,9 +44,23 @@ class Tokenizer:
         2. lowercase the characters
         3. unicode 
         '''
+
         token = token.casefold() 
-        token = self.filter_alphanumeric(token)
+        token = self.unicode_normalize(token)
         return token
+
+    def unicode_normalize(self, token):
+        '''
+        this function will take a token and perform a unicode normalization so that certain text that we parsed will be treated in normalized way instead of messy unnormalized cases.
+        we can specify if we need to strip the accents or not.
+        we will, by default, modify fullwidth/halfwidth chars into their respective default abstract character
+        '''
+        if self.config['strip_accent']:
+            nfkd = unicodedata.normalize('NFKD', token)
+            token = ''.join(char for char in nfkd if not unicodedata.combining(char))
+        # NFC does not handle the fullwidth/halfwidth and ligatures
+        # NFKC does! it will normalize ｃａｆｅ -> cafe but keeps accent.
+        return unicodedata.normalize('NFKC', token)
 
     def filter_alphanumeric(self, token):
         # . / : 
