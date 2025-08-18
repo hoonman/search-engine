@@ -1,5 +1,6 @@
 import os
 import json
+import string
 import re
 import unicodedata
 from ..config.config import tokenizer_config
@@ -45,8 +46,9 @@ class Tokenizer:
         3. unicode 
         '''
 
-        token = token.casefold() 
         token = self.unicode_normalize(token)
+        token = token.casefold() 
+        token = self.filter_punctuations(token)
         return token
 
     def unicode_normalize(self, token):
@@ -68,7 +70,14 @@ class Tokenizer:
         # @ for emails
         return re.sub(r'[^a-z0-9\s]', ' ', token)
 
-    # def filter_punctuations(self, token):
+    def filter_punctuations(self, token):
+        '''
+        given a token, filters only the relevant punctuations considering the position of that punctuation in that token.
+        ex) don't --> keep the apostrophe
+            punctuation, --> disregard the comma at the end of the token
+        '''
+            
+        return token.strip(string.punctuation)
 
     def compute_word_frequencies(self):
         '''
