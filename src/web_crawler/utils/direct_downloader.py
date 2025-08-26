@@ -22,7 +22,24 @@ def direct_download(url, config):
             'User-Agent': config.user_agent
         }
         raw_response = requests.get(url, headers=headers, timeout=5)
-        return Response(url, raw_response.status_code, "", raw_response)
-    except Exception as e:
-        return Response(url, 400, str(e), None)
         
+        # Create a response dictionary similar to what the cache server would return
+        response_data = {
+            "url": url,
+            "status": raw_response.status_code,
+            "error": "",
+            "content": raw_response.content,
+            "raw_content": raw_response.content,
+            "headers": dict(raw_response.headers)
+        }
+        return Response(response_data)
+    except Exception as e:
+        error_data = {
+            "url": url,
+            "status": 400,
+            "error": str(e),
+            "content": None,
+            "raw_content": None,
+            "headers": {}
+        }
+        return Response(error_data)
