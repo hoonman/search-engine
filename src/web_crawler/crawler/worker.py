@@ -2,6 +2,7 @@ from threading import Thread
 
 from inspect import getsource
 from utils.download import download
+from utils.direct_downloader import direct_download
 from utils import get_logger
 import scraper
 import time
@@ -23,7 +24,9 @@ class Worker(Thread):
             if not tbd_url:
                 self.logger.info("Frontier is empty. Stopping Crawler.")
                 break
-            resp = download(tbd_url, self.config, self.logger)
+            # use direct download since cache server is not up
+            # resp = download(tbd_url, self.config, self.logger)
+            resp = direct_download(tbd_url, self.config)
             self.logger.info(
                 f"Downloaded {tbd_url}, status <{resp.status}>, "
                 f"using cache {self.config.cache_server}.")
