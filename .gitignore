@@ -1,2 +1,3 @@
 /tokenizer_files
 *.pyc
+/esdenv
