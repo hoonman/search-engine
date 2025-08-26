@@ -6,13 +6,14 @@ from urllib.parse import urlparse
 
 domain_last_accessed = {}
 global_request_count = 0
+MAX_REQUESTS = 200
 
 def direct_download(url, config):
     '''Downloads content directly from the web without using cache server'''
     global global_request_count
     domain = urlparse(url).netloc
 
-    if global_request_count >= config["CRAWLER"]["MAX_PAGES_TEST"]:
+    if global_request_count >= MAX_REQUESTS:
         return Response({
             "url": url,
             "status": 429,

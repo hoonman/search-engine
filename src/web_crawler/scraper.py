@@ -1,6 +1,8 @@
 import re
 from urllib.parse import urlparse
 
+unique_links = set()
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -26,13 +28,19 @@ def extract_next_links(url, resp):
     why do we need the urL? 
     
     '''
+    global unique_links
     print(f"extracting links from url: {url}")
     print(f"response: {resp}")
     
 
     links = []
     for i in range(100):
-        links.append("https://www.google.com")
+        link = f"https://www.google.com/{i}"
+        links.append(link)
+        unique_links.add(link)
+
+    if len(unique_links) > 100:
+        return []
     return links
 
 def is_valid(url):
