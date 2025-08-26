@@ -39,8 +39,6 @@ def extract_next_links(url, resp):
         links.append(link)
         unique_links.add(link)
 
-    if len(unique_links) > 100:
-        return []
     return links
 
 def is_valid(url):
