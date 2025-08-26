@@ -26,7 +26,8 @@ def extract_next_links(url, resp):
     why do we need the urL? 
     
     '''
-    print("scraper reached!")
+    print(f"extracting links from url: {url}")
+    print(f"response: {resp}")
 
     return list()
 
