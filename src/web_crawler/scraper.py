@@ -28,8 +28,12 @@ def extract_next_links(url, resp):
     '''
     print(f"extracting links from url: {url}")
     print(f"response: {resp}")
+    
 
-    return list()
+    links = []
+    for i in range(100):
+        links.append("https://www.google.com")
+    return links
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 

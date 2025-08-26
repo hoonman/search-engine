@@ -5,10 +5,20 @@ from utils.response import Response
 from urllib.parse import urlparse
 
 domain_last_accessed = {}
+global_request_count = 0
 
 def direct_download(url, config):
     '''Downloads content directly from the web without using cache server'''
+    global global_request_count
     domain = urlparse(url).netloc
+
+    if global_request_count >= config["CRAWLER"]["MAX_PAGES_TEST"]:
+        return Response({
+            "url": url,
+            "status": 429,
+            "error": "Max pages limit reached",
+        })
+    global_request_count += 1
 
     if domain in domain_last_accessed:
         elapsed = time.time() - domain_last_accessed[domain]
