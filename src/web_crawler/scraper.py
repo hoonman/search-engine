@@ -1,5 +1,7 @@
 import re
-from urllib.parse import urlparse
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse, urljoin
 
 unique_links = set()
 
@@ -26,19 +28,21 @@ def extract_next_links(url, resp):
     use resp.raw_response.content to parse content. should we also retreive URLs that are not part of anchor tags? they are not hyperlinks though.
 
     why do we need the urL? 
+
+    1. parse the web content with a library like beautifulsoup 
+    2. extract all the links from <a> tags
     
     '''
-    global unique_links
-    print(f"extracting links from url: {url}")
-    print(f"response: {resp}")
-    
-
     links = []
-    for i in range(100):
-        link = f"https://www.google.com/{i}"
-        links.append(link)
-        unique_links.add(link)
+    if resp.status != 200:
+        return []
 
+    soup = BeautifulSoup(resp.raw_response.content, "lxml") # uses lxml parser
+    for link in soup.find_all('a'):
+        parsed_url = link.get('href')
+        joined_url = urljoin(url, parsed_url)
+        print("joined url: ", joined_url)
+        links.append(joined_url)
     return links
 
 def is_valid(url):
