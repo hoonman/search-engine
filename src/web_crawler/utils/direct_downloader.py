@@ -39,9 +39,10 @@ def direct_download(url, config):
             "url": url,
             "status": raw_response.status_code,
             "error": "",
-            "content": raw_response.content,
-            "raw_content": raw_response.content,
-            "headers": dict(raw_response.headers)
+            "raw_response": {
+                "url": url,
+                "content": raw_response.content,
+            },
         }
         return Response(response_data)
     except Exception as e:
@@ -49,8 +50,9 @@ def direct_download(url, config):
             "url": url,
             "status": 400,
             "error": str(e),
-            "content": None,
-            "raw_content": None,
-            "headers": {}
+            "raw_response": {
+                "url": url,
+                "content": raw_response.content
+            }
         }
         return Response(error_data)

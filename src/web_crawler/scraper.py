@@ -1,5 +1,4 @@
 import re
-import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 
@@ -37,12 +36,13 @@ def extract_next_links(url, resp):
     if resp.status != 200:
         return []
 
-    soup = BeautifulSoup(resp.raw_response.content, "lxml") # uses lxml parser
-    for link in soup.find_all('a'):
-        parsed_url = link.get('href')
-        joined_url = urljoin(url, parsed_url)
-        print("joined url: ", joined_url)
-        links.append(joined_url)
+    if resp.raw_response and resp.raw_response.content:
+        soup = BeautifulSoup(resp.raw_response.content, "lxml") # uses lxml parser
+        for link in soup.find_all('a'):
+            parsed_url = link.get('href')
+            joined_url = urljoin(url, parsed_url)
+            print("joined url: ", joined_url)
+            links.append(joined_url)
     return links
 
 def is_valid(url):
