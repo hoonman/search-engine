@@ -36,6 +36,7 @@ def extract_next_links(url, resp):
     if resp.status != 200:
         return []
 
+    print('raw response: ', resp.raw_response)
     if resp.raw_response and resp.raw_response.content:
         soup = BeautifulSoup(resp.raw_response.content, "lxml") # uses lxml parser
         for link in soup.find_all('a'):
