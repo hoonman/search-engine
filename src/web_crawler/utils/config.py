@@ -17,3 +17,4 @@ class Config(object):
         self.time_delay = float(config["CRAWLER"]["POLITENESS"])
 
         self.cache_server = None
+        self.page_threshold = int(config["CRAWLER"]["PAGE_THRESHOLD"])
