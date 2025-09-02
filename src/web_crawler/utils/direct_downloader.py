@@ -1,6 +1,7 @@
 import requests
 import time
 import random
+import pickle
 from utils.response import Response
 from urllib.parse import urlparse
 
@@ -39,10 +40,10 @@ def direct_download(url, config):
             "url": url,
             "status": raw_response.status_code,
             "error": "",
-            "raw_response": {
+            "raw_response": pickle.dumps({
                 "url": url,
-                "content": raw_response.content,
-            },
+                "content": raw_response.content
+            }),
         }
         return Response(response_data)
     except Exception as e:
@@ -50,9 +51,9 @@ def direct_download(url, config):
             "url": url,
             "status": 400,
             "error": str(e),
-            "raw_response": {
+            "raw_response": pickle.dumps({
                 "url": url,
                 "content": raw_response.content
-            }
+            })
         }
         return Response(error_data)
