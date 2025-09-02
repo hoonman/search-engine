@@ -40,7 +40,7 @@ def direct_download(url, config):
             "url": url,
             "status": raw_response.status_code,
             "error": "",
-            "response": {
+            "raw_response": {
                 "url": url,
                 "content": raw_response.content
             },
@@ -51,7 +51,7 @@ def direct_download(url, config):
             "url": url,
             "status": 400,
             "error": str(e),
-            "response": {
+            "raw_response": {
                 "url": url,
                 "content": raw_response.content
             }
