@@ -10,6 +10,6 @@ class Response(object):
             #     pickle.loads(resp_dict["response"])
             #     if "response" in resp_dict else
             #     None)
-            self.raw_response = resp_dict
+            self.raw_response = resp_dict.get("raw_response", None)
         except TypeError:
             self.raw_response = None
