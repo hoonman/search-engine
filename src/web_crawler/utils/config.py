@@ -14,6 +14,7 @@ class Config(object):
         self.port = int(config["CONNECTION"]["PORT"])
 
         self.seed_urls = config["CRAWLER"]["SEEDURL"].split(",")
+        self.valid_domains = set(config["CRAWLER"]["VALID_DOMAINS"].split(","))
         self.time_delay = float(config["CRAWLER"]["POLITENESS"])
 
         self.cache_server = None

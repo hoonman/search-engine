@@ -14,7 +14,7 @@ class Worker(Thread):
         self.config = config
         self.frontier = frontier
         self.page_count = 0
-        self.scraper = scraper.Scraper()
+        self.scraper = scraper.Scraper(config)
         # basic check for requests in scraper
         assert {getsource(scraper).find(req) for req in {"from requests import", "import requests"}} == {-1}, "Do not use requests in scraper.py"
         assert {getsource(scraper).find(req) for req in {"from urllib.request import", "import urllib.request"}} == {-1}, "Do not use urllib.request in scraper.py"
@@ -33,7 +33,7 @@ class Worker(Thread):
                 f"Downloaded {tbd_url}, status <{resp.status}>, "
                 f"using cache {self.config.cache_server}.")
             if self.page_count >= self.config.page_threshold:
-                self.logger.info(f"Page count threshold reached. Stopping the crawler.")
+                self.logger.info(f"Page count threshold of {self.config.page_threshold} reached. Stopping the crawler.")
                 break
             # scraped_urls = scraper.scraper(tbd_url, resp)
             scraped_urls = self.scraper.scraper(tbd_url, resp)

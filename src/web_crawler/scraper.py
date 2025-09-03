@@ -1,17 +1,19 @@
 import re
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin, urlsplit, urlunsplit
 
 class Scraper:
-    def __init__(self):
-        self.visited_links = set()
+    def __init__(self, config):
+        self.unique_links = set()
+        self.unfragmented_links = set()
+        self.config = config # we can use this for similarity threshold later.
     
     def scraper(self, url, resp):
         links = self.extract_next_links(url, resp)
-        return [link for link in links if is_valid(link)]
+        return [link for link in links if self.is_valid(link)]
 
     def extract_next_links(self, url, resp):
-        links = []
+        extracted_links = set()
         if resp.status != 200:
             return []
 
@@ -20,14 +22,16 @@ class Scraper:
             for link in soup.find_all('a'):
                 parsed_url = link.get('href')
                 joined_url = urljoin(url, parsed_url)
-                print("joined url: ", joined_url)
-                links.append(joined_url)
-        return links
+                extracted_links.add(joined_url)
+                self.extract_unfragmented_links(joined_url)
+        extracted_links.difference_update(self.unique_links)
+        self.unique_links = self.unique_links | extracted_links
+        return extracted_links
 
-    def is_valid(url):
-    # Decide whether to crawl this url or not. 
-    # If you decide to crawl it, return True; otherwise return False.
-    # There are already some conditions that return False.
+    def is_valid(self, url):
+        # Decide whether to crawl this url or not. 
+        # If you decide to crawl it, return True; otherwise return False.
+        # There are already some conditions that return False.
         try:
             parsed = urlparse(url)
             if parsed.scheme not in set(["http", "https"]):
@@ -45,6 +49,19 @@ class Scraper:
         except TypeError:
             print ("TypeError for ", parsed)
             raise
+
+    # the below functions are for the actual report
+    def extract_unfragmented_links(self, url):
+        parts = urlsplit(url)
+        unfragmented_url = urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, ""))
+        if unfragmented_url not in self.unfragmented_links:
+            self.unfragmented_links.add(unfragmented_url)
+
+
+
+
+
+
 
 
 
