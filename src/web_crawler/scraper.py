@@ -1,6 +1,7 @@
 import re
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, urlsplit, urlunsplit
+import json
 
 class Scraper:
     def __init__(self, config):
@@ -36,6 +37,8 @@ class Scraper:
             parsed = urlparse(url)
             if parsed.scheme not in set(["http", "https"]):
                 return False
+            if not self.filter_valid_domains(url, parsed):
+                return False
             return not re.match(
                 r".*\.(css|js|bmp|gif|jpe?g|ico"
                 + r"|png|tiff?|mid|mp2|mp3|mp4"
@@ -50,19 +53,66 @@ class Scraper:
             print ("TypeError for ", parsed)
             raise
 
-    # the below functions are for the actual report
     def extract_unfragmented_links(self, url):
         parts = urlsplit(url)
         unfragmented_url = urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, ""))
         if unfragmented_url not in self.unfragmented_links:
             self.unfragmented_links.add(unfragmented_url)
 
+    def filter_valid_domains(self, url, parsed):
+        '''
+        given the url itself, urlparse object parsed, determine if the url contains valid domain.
+        method: break down the url since we have a urlparse object and see if that broken down url matches one of the valid ones we have
+        returns: boolean if the given url is valid or not
+        '''
+        allowed_suffixes = tuple("." + d for d in self.config.valid_domains)
+        try:
+            original_host = parsed.hostname
+            host = parsed.hostname 
+            if not host: 
+                return False
+            host = host.rstrip(".").lower()
+
+            print(f"original url: {url}  host: {original_host}  filtered host: {host}  result: {(host in self.config.valid_domains) or host.endswith(allowed_suffixes)}")
+            result = (host in self.config.valid_domains) or host.endswith(allowed_suffixes)
+            data = {
+                "original_url": url,
+                "original_host": original_host,
+                "filtered_host": host,
+                "result": result
+            }
+            
+            def append_to_json_file(filename, data):
+                try:
+                    with open(filename, 'r') as f:
+                        try:
+                            existing_data = json.load(f)
+                        except json.JSONDecodeError:
+                            existing_data = []
+                except FileNotFoundError:
+                    existing_data = []
+                
+                existing_data.append(data)
+                
+                with open(filename, 'w') as f:
+                    json.dump(existing_data, f, indent=2)
+            
+            if not result:
+                append_to_json_file('false_urls.json', data)
+            else:
+                append_to_json_file('true_urls.json', data)
+            return (host in self.config.valid_domains) or host.endswith(allowed_suffixes)
 
 
+        except Exception as e:
+            print(f"an exception occured in filter valid domains function: {str(e)}")
+            return False
 
-
-
-
+    def report(self):
+        '''
+        reports back important information about the crawler 
+        '''
+        pass
 
 
 def scraper(url, resp):
