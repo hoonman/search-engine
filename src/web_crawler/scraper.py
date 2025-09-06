@@ -1,13 +1,15 @@
 import re
+import json
+import time
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, urlsplit, urlunsplit
-import json
 
 class Scraper:
     def __init__(self, config):
         self.unique_links = set()
         self.unfragmented_links = set()
         self.config = config # we can use this for similarity threshold later.
+        self.start_time = time.time()
     
     def scraper(self, url, resp):
         links = self.extract_next_links(url, resp)
@@ -73,7 +75,6 @@ class Scraper:
                 return False
             host = host.rstrip(".").lower()
 
-            print(f"original url: {url}  host: {original_host}  filtered host: {host}  result: {(host in self.config.valid_domains) or host.endswith(allowed_suffixes)}")
             result = (host in self.config.valid_domains) or host.endswith(allowed_suffixes)
             data = {
                 "original_url": url,
@@ -110,8 +111,11 @@ class Scraper:
 
     def report(self):
         '''
-        reports back important information about the crawler 
+        reports back important information such as time elapsed, count of urls, longest pages, etc
         '''
+        end_time = time.time()
+        total_time = end_time - self.start_time
+        print(f"Time elapsed: {total_time:.4f} seconds")
         pass
 
 

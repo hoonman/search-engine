@@ -24,6 +24,7 @@ class Worker(Thread):
         while True:
             tbd_url = self.frontier.get_tbd_url()
             if not tbd_url:
+                self.scraper.report()
                 self.logger.info("Frontier is empty. Stopping Crawler.")
                 break
             # use direct download since cache server is not up
