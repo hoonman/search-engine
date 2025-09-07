@@ -83,25 +83,10 @@ class Scraper:
                 "result": result
             }
             
-            def append_to_json_file(filename, data):
-                try:
-                    with open(filename, 'r') as f:
-                        try:
-                            existing_data = json.load(f)
-                        except json.JSONDecodeError:
-                            existing_data = []
-                except FileNotFoundError:
-                    existing_data = []
-                
-                existing_data.append(data)
-                
-                with open(filename, 'w') as f:
-                    json.dump(existing_data, f, indent=2)
-            
             if not result:
-                append_to_json_file('false_urls.json', data)
+                self.append_to_json_file('false_urls.json', data)
             else:
-                append_to_json_file('true_urls.json', data)
+                self.append_to_json_file('true_urls.json', data)
             return (host in self.config.valid_domains) or host.endswith(allowed_suffixes)
 
 
@@ -109,6 +94,20 @@ class Scraper:
             print(f"an exception occured in filter valid domains function: {str(e)}")
             return False
 
+    def append_to_json_file(self, filename, data):
+        try:
+            with open(filename, 'r') as f:
+                try:
+                    existing_data = json.load(f)
+                except json.JSONDecodeError:
+                    existing_data = []
+        except FileNotFoundError:
+            existing_data = []
+        
+        existing_data.append(data)
+        
+        with open(filename, 'w') as f:
+            json.dump(existing_data, f, indent=2)
     def report(self):
         '''
         reports back important information such as time elapsed, count of urls, longest pages, etc
