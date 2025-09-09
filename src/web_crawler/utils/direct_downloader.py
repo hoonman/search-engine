@@ -31,7 +31,7 @@ def direct_download(url, config):
             "error": str(e),
             "raw_response": {
                 "url": url,
-                "content": raw_response.content
+                "content": b""
             }
         }
         return Response(error_data)
