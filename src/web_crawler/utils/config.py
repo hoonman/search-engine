@@ -19,3 +19,5 @@ class Config(object):
 
         self.cache_server = None
         self.page_threshold = int(config["CRAWLER"]["PAGE_THRESHOLD"])
+        if self.page_threshold == -1:
+            self.page_threshold = float('inf')

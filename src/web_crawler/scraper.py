@@ -13,9 +13,12 @@ class Scraper:
         self.subdomains = {}
     
     def scraper(self, url, resp):
-        links = self.extract_next_links(url, resp)
+        self.unique_links.add(url)
+        self.extract_unfragmented_links(url)
+
+        extracted_links = self.extract_next_links(url, resp)
         valid_links = []
-        for link in links:
+        for link in extracted_links:
             if self.is_valid(link):
                 valid_links.append(link)
                 self.append_to_json_file('complete_urls.json', {"url": link})
@@ -33,9 +36,8 @@ class Scraper:
                 parsed_url = link.get('href')
                 joined_url = urljoin(url, parsed_url)
                 extracted_links.add(joined_url)
-                self.extract_unfragmented_links(joined_url)
-        extracted_links.difference_update(self.unique_links)
-        self.unique_links = self.unique_links | extracted_links
+        extracted_links.difference_update(self.unique_links) # from extracted links remove all links that exist already in unique links
+        # self.unique_links = self.unique_links | extracted_links
         return extracted_links
 
     def is_valid(self, url):
@@ -103,11 +105,11 @@ class Scraper:
 
     def is_subdomain(self, domain, filtered_host, parsed_url):
         if filtered_host == domain or (filtered_host == ("." + domain)):
-            scheme_hostname = parsed_url.scheme + parsed_url.hostname
+            scheme_hostname = parsed_url.scheme + "://" + parsed_url.hostname
             if domain in self.subdomains:
                 self.subdomains[scheme_hostname] += 1
             else:
-                self.subdomains[scheme_hostname] = 0
+                self.subdomains[scheme_hostname] = 1
 
     def append_to_json_file(self, filename, data):
         try:
@@ -123,18 +125,20 @@ class Scraper:
         
         with open(filename, 'w') as f:
             json.dump(existing_data, f, indent=2)
-    def report(self):
+    def report(self, finish_reason):
         '''
         reports back important information such as time elapsed, count of urls, longest pages, etc
         '''
         end_time = time.time()
         total_time = end_time - self.start_time
         report_data = {
-            "unique_links": self.unique_links,
+            "unfragmented_unique_links": len(list(self.unfragmented_links)),
             "time_elapsed": total_time,
-
+            "subdomain_counts": self.subdomains,
+            "finish_reason": finish_reason
         }
         print(f"Time elapsed: {total_time:.4f} seconds")
+        self.append_to_json_file('crawler_report.json', report_data)
         pass
 
 
