@@ -13,7 +13,13 @@ class Scraper:
     
     def scraper(self, url, resp):
         links = self.extract_next_links(url, resp)
-        return [link for link in links if self.is_valid(link)]
+        valid_links = []
+        for link in links:
+            if self.is_valid(link):
+                valid_links.append(link)
+                self.append_to_json_file('complete_urls.json', {"url": link})
+
+        return valid_links
 
     def extract_next_links(self, url, resp):
         extracted_links = set()
@@ -41,6 +47,7 @@ class Scraper:
                 return False
             if not self.filter_valid_domains(url, parsed):
                 return False
+            # add .img, .apk, .sql, 
             return not re.match(
                 r".*\.(css|js|bmp|gif|jpe?g|ico"
                 + r"|png|tiff?|mid|mp2|mp3|mp4"
@@ -88,8 +95,6 @@ class Scraper:
             else:
                 self.append_to_json_file('true_urls.json', data)
             return (host in self.config.valid_domains) or host.endswith(allowed_suffixes)
-
-
         except Exception as e:
             print(f"an exception occured in filter valid domains function: {str(e)}")
             return False
