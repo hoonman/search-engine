@@ -23,9 +23,15 @@ class Worker(Thread):
     def run(self):
         while True:
             tbd_url = self.frontier.get_tbd_url()
-            if not tbd_url:
-                self.scraper.report()
-                self.logger.info("Frontier is empty. Stopping Crawler.")
+            if not tbd_url: 
+                stop_reason = "Frontier is empty."
+                self.scraper.report(stop_reason)
+                self.logger.info(stop_reason + " " + "Stopping Crawler.")
+                break
+            if self.page_count >= self.config.page_threshold:
+                stop_reason = f"Page count threshold of {self.config.page_threshold} reached."
+                self.scraper.report(stop_reason)
+                self.logger.info(stop_reason + " " + "Stopping the crawler.")
                 break
             # use direct download since cache server is not up
             # resp = download(tbd_url, self.config, self.logger)
@@ -33,10 +39,6 @@ class Worker(Thread):
             self.logger.info(
                 f"Downloaded {tbd_url}, status <{resp.status}>, "
                 f"using cache {self.config.cache_server}.")
-            if self.page_count >= self.config.page_threshold:
-                self.logger.info(f"Page count threshold of {self.config.page_threshold} reached. Stopping the crawler.")
-                break
-            # scraped_urls = scraper.scraper(tbd_url, resp)
             scraped_urls = self.scraper.scraper(tbd_url, resp)
             for scraped_url in scraped_urls:
                 self.frontier.add_url(scraped_url)
