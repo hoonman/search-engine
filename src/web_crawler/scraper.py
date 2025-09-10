@@ -49,7 +49,7 @@ class Scraper:
                 return False
             # add .img, .apk, .sql, 
             return not re.match(
-                r".*\.(css|js|bmp|gif|jpe?g|ico"
+                r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml"
                 + r"|png|tiff?|mid|mp2|mp3|mp4"
                 + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
                 + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
