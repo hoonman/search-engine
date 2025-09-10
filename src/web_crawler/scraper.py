@@ -10,6 +10,7 @@ class Scraper:
         self.unfragmented_links = set()
         self.config = config # we can use this for similarity threshold later.
         self.start_time = time.time()
+        self.subdomains = {}
     
     def scraper(self, url, resp):
         links = self.extract_next_links(url, resp)
@@ -94,10 +95,19 @@ class Scraper:
                 self.append_to_json_file('false_urls.json', data)
             else:
                 self.append_to_json_file('true_urls.json', data)
-            return (host in self.config.valid_domains) or host.endswith(allowed_suffixes)
+                self.is_subdomain('ics.uci.edu', host, parsed)
+            return result
         except Exception as e:
             print(f"an exception occured in filter valid domains function: {str(e)}")
             return False
+
+    def is_subdomain(self, domain, filtered_host, parsed_url):
+        if filtered_host == domain or (filtered_host == ("." + domain)):
+            scheme_hostname = parsed_url.scheme + parsed_url.hostname
+            if domain in self.subdomains:
+                self.subdomains[scheme_hostname] += 1
+            else:
+                self.subdomains[scheme_hostname] = 0
 
     def append_to_json_file(self, filename, data):
         try:
@@ -119,6 +129,11 @@ class Scraper:
         '''
         end_time = time.time()
         total_time = end_time - self.start_time
+        report_data = {
+            "unique_links": self.unique_links,
+            "time_elapsed": total_time,
+
+        }
         print(f"Time elapsed: {total_time:.4f} seconds")
         pass
 
