@@ -16,14 +16,20 @@ class Scraper:
         self.unique_links.add(url)
         self.extract_unfragmented_links(url)
 
-        extracted_links = self.extract_next_links(url, resp)
-        valid_links = []
-        for link in extracted_links:
-            if self.is_valid(link):
-                valid_links.append(link)
-                self.append_to_json_file('complete_urls.json', {"url": link})
-
-        return valid_links
+        try:
+            extracted_links = self.extract_next_links(url, resp)
+            valid_links = []
+            for link in extracted_links:
+                if self.is_valid(link):
+                    valid_links.append(link)
+                    # self.append_to_json_file('valid_urls.json', link)
+            return valid_links
+        except Exception as e:
+            self.append_to_json_file('crawler_report_error.json', 
+                {
+                    "error": f"An exception ocurred while running the crawler. Crawler did not finish successfully. Exception: {str(e)}.",
+                    "last_url": link
+                })
 
     def extract_next_links(self, url, resp):
         extracted_links = set()
@@ -86,17 +92,18 @@ class Scraper:
             host = host.rstrip(".").lower()
 
             result = (host in self.config.valid_domains) or host.endswith(allowed_suffixes)
-            data = {
-                "original_url": url,
-                "original_host": original_host,
-                "filtered_host": host,
-                "result": result
-            }
+            # data = {
+            #     "original_url": url,
+            #     "original_host": original_host,
+            #     "filtered_host": host,
+            #     "result": result
+            # }
             
-            if not result:
-                self.append_to_json_file('false_urls.json', data)
-            else:
-                self.append_to_json_file('true_urls.json', data)
+            # if not result:
+            #     self.append_to_json_file('false_urls.json', data)
+            # else:
+            #     self.append_to_json_file('true_urls.json', data)
+            if result:
                 self.is_subdomain('ics.uci.edu', host, parsed)
             return result
         except Exception as e:
@@ -113,7 +120,7 @@ class Scraper:
 
     def append_to_json_file(self, filename, data):
         try:
-            with open(filename, 'r') as f:
+            with open('report/' + filename, 'r') as f:
                 try:
                     existing_data = json.load(f)
                 except json.JSONDecodeError:
@@ -123,8 +130,9 @@ class Scraper:
         
         existing_data.append(data)
         
-        with open(filename, 'w') as f:
+        with open('report/' + filename, 'w') as f:
             json.dump(existing_data, f, indent=2)
+
     def report(self, finish_reason):
         '''
         reports back important information such as time elapsed, count of urls, longest pages, etc
@@ -141,11 +149,6 @@ class Scraper:
         self.append_to_json_file('crawler_report.json', report_data)
         pass
 
-
-def scraper(url, resp):
-    links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)]
-
 def extract_next_links(url, resp):
     # Implementation required.
     # url: the URL that was used to get the page
@@ -156,51 +159,4 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-
-    '''
-    given the url, and the response, we must first parse the raw_response and retrieve any hyperlinks.
-    since hyperlinks are usually in anchor tags, if we see any <a> tags we will parse. 
-    <a href="http://www.google.com"></a>
-
-    use resp.raw_response.content to parse content. should we also retreive URLs that are not part of anchor tags? they are not hyperlinks though.
-
-    why do we need the urL? 
-
-    1. parse the web content with a library like beautifulsoup 
-    2. extract all the links from <a> tags
-    
-    '''
-    links = []
-    if resp.status != 200:
-        return []
-
-    if resp.raw_response and resp.raw_response['content']:
-        soup = BeautifulSoup(resp.raw_response['content'], "lxml") # uses lxml parser
-        for link in soup.find_all('a'):
-            parsed_url = link.get('href')
-            joined_url = urljoin(url, parsed_url)
-            print("joined url: ", joined_url)
-            links.append(joined_url)
-    return links
-
-def is_valid(url):
-    # Decide whether to crawl this url or not. 
-    # If you decide to crawl it, return True; otherwise return False.
-    # There are already some conditions that return False.
-    try:
-        parsed = urlparse(url)
-        if parsed.scheme not in set(["http", "https"]):
-            return False
-        return not re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
-            + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
-            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
-            + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-            + r"|epub|dll|cnf|tgz|sha1"
-            + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
-
-    except TypeError:
-        print ("TypeError for ", parsed)
-        raise
+    pass
