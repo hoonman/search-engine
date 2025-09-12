@@ -3,9 +3,11 @@ import json
 import time
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, urlsplit, urlunsplit
+from utils import get_logger
 
 class Scraper:
     def __init__(self, config):
+        self.logger = get_logger(f"Scraper", "SCRAPER")
         self.unique_links = set()
         self.unfragmented_links = set()
         self.config = config # we can use this for similarity threshold later.
@@ -21,14 +23,18 @@ class Scraper:
             valid_links = []
             for link in extracted_links:
                 if self.is_valid(link):
-                    valid_links.append(link)
-                    # self.append_to_json_file('valid_urls.json', link)
+                    if link not in self.unique_links:
+                        self.unique_links.add(link)
+                        valid_links.append(link)
+            self.logger.info(f"Found {len(valid_links)} new valid links from {url}")
             return valid_links
         except Exception as e:
+            self.logger.error(f"Exception in scraper for URL {url}: {str(e)}")
             self.append_to_json_file('crawler_report_error.json', 
                 {
                     "error": f"An exception ocurred while running the crawler. Crawler did not finish successfully. Exception: {str(e)}.",
-                    "last_url": link
+                    "last_url": url,
+                    "timestamp": time.time()
                 })
 
     def extract_next_links(self, url, resp):
@@ -37,7 +43,7 @@ class Scraper:
             return []
 
         if resp.raw_response and resp.raw_response['content']:
-            soup = BeautifulSoup(resp.raw_response['content'], "lxml") # uses lxml parser
+            soup = BeautifulSoup(resp.raw_response['content'], "lxml")
             for link in soup.find_all('a'):
                 parsed_url = link.get('href')
                 joined_url = urljoin(url, parsed_url)
@@ -69,6 +75,7 @@ class Scraper:
 
         except TypeError:
             print ("TypeError for ", parsed)
+            self.logger.info("TypeError for ", parsed)
             raise
 
     def extract_unfragmented_links(self, url):
