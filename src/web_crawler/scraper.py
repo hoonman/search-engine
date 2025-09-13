@@ -9,14 +9,13 @@ class Scraper:
     def __init__(self, config):
         self.logger = get_logger(f"Scraper", "SCRAPER")
         self.unique_links = set()
-        self.unfragmented_links = set()
+        self.defragmented_links = set()
         self.config = config # we can use this for similarity threshold later.
         self.start_time = time.time()
         self.subdomains = {}
 
     def scraper(self, url, resp):
         self.unique_links.add(url)
-        self.extract_unfragmented_links(url)
 
         try:
             extracted_links = self.extract_next_links(url, resp)
@@ -25,7 +24,8 @@ class Scraper:
                 if self.is_valid(link):
                     if link not in self.unique_links:
                         self.unique_links.add(link)
-                        valid_links.append(link)
+                        defrag_link = self.defragment_link(link)
+                        valid_links.append(defrag_link)
             self.logger.info(f"Found {len(valid_links)} new valid links from {url}")
             return valid_links
         except Exception as e:
@@ -49,45 +49,38 @@ class Scraper:
                 joined_url = urljoin(url, parsed_url)
                 extracted_links.add(joined_url)
         extracted_links.difference_update(self.unique_links) # from extracted links remove all links that exist already in unique links
-        # self.unique_links = self.unique_links | extracted_links
         return extracted_links
 
     def is_valid(self, url):
-        # Decide whether to crawl this url or not. 
-        # If you decide to crawl it, return True; otherwise return False.
-        # There are already some conditions that return False.
         try:
             parsed = urlparse(url)
             if parsed.scheme not in set(["http", "https"]):
                 return False
             if not self.filter_valid_domains(url, parsed):
                 return False
-            # add .img, .apk, .sql, 
-            disallowed_extensions = (r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml")
+            disallowed_extensions = (r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml" 
+            + r"|png|tiff?|mid|mp2|mp3|mp4"
+            + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
+            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
+            + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
+            + r"|epub|dll|cnf|tgz|sha1"
+            + r"|thmx|mso|arff|rtf|jar|csv"
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$")
 
             if re.match(disallowed_extensions, parsed.path.lower()) or re.match(disallowed_extensions, parsed.query.lower()):
                 return False
-            
-            # return not re.match(
-            #     r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml"
-            #     + r"|png|tiff?|mid|mp2|mp3|mp4"
-            #     + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
-            #     + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
-            #     + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-            #     + r"|epub|dll|cnf|tgz|sha1"
-            #     + r"|thmx|mso|arff|rtf|jar|csv"
-            #     + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
-
+            return True
         except TypeError:
-            print ("TypeError for ", parsed)
             self.logger.info("TypeError for ", parsed)
             raise
 
-    def extract_unfragmented_links(self, url):
+    def defragment_link(self, url):
         parts = urlsplit(url)
-        unfragmented_url = urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, ""))
-        if unfragmented_url not in self.unfragmented_links:
-            self.unfragmented_links.add(unfragmented_url)
+        defragmented_url = urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, ""))
+        if defragmented_url not in self.defragmented_links:
+            self.defragmented_links.add(defragmented_url)
+        return defragmented_url
+        
 
     def filter_valid_domains(self, url, parsed):
         '''
@@ -97,29 +90,16 @@ class Scraper:
         '''
         allowed_suffixes = tuple("." + d for d in self.config.valid_domains)
         try:
-            original_host = parsed.hostname
             host = parsed.hostname 
             if not host: 
                 return False
             host = host.rstrip(".").lower()
-
             result = (host in self.config.valid_domains) or host.endswith(allowed_suffixes)
-            # data = {
-            #     "original_url": url,
-            #     "original_host": original_host,
-            #     "filtered_host": host,
-            #     "result": result
-            # }
-            
-            # if not result:
-            #     self.append_to_json_file('false_urls.json', data)
-            # else:
-            #     self.append_to_json_file('true_urls.json', data)
             if result:
                 self.is_subdomain('ics.uci.edu', host, parsed)
             return result
         except Exception as e:
-            print(f"an exception occured in filter valid domains function: {str(e)}")
+            self.logger.info(f"an exception occured in filter valid domains function: {str(e)}")
             return False
 
     def is_subdomain(self, domain, filtered_host, parsed_url):
@@ -152,7 +132,7 @@ class Scraper:
         end_time = time.time()
         total_time = end_time - self.start_time
         report_data = {
-            "unfragmented_unique_links": len(list(self.unfragmented_links)),
+            "unique_link_count": len(list(self.defragmented_links)),
             "time_elapsed": total_time,
             "subdomain_counts": self.subdomains,
             "finish_reason": finish_reason
@@ -161,7 +141,7 @@ class Scraper:
         self.append_to_json_file('crawler_report.json', report_data)
         pass
 
-def extract_next_links(url, resp):
+    # comments regarding response object for the resp obj param
     # Implementation required.
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
@@ -171,4 +151,3 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    pass
