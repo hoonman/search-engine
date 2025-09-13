@@ -13,7 +13,7 @@ class Scraper:
         self.config = config # we can use this for similarity threshold later.
         self.start_time = time.time()
         self.subdomains = {}
-    
+
     def scraper(self, url, resp):
         self.unique_links.add(url)
         self.extract_unfragmented_links(url)
@@ -63,15 +63,20 @@ class Scraper:
             if not self.filter_valid_domains(url, parsed):
                 return False
             # add .img, .apk, .sql, 
-            return not re.match(
-                r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml"
-                + r"|png|tiff?|mid|mp2|mp3|mp4"
-                + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
-                + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
-                + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-                + r"|epub|dll|cnf|tgz|sha1"
-                + r"|thmx|mso|arff|rtf|jar|csv"
-                + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+            disallowed_extensions = (r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml")
+
+            if re.match(disallowed_extensions, parsed.path.lower()) or re.match(disallowed_extensions, parsed.query.lower()):
+                return False
+            
+            # return not re.match(
+            #     r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml"
+            #     + r"|png|tiff?|mid|mp2|mp3|mp4"
+            #     + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
+            #     + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
+            #     + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
+            #     + r"|epub|dll|cnf|tgz|sha1"
+            #     + r"|thmx|mso|arff|rtf|jar|csv"
+            #     + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
 
         except TypeError:
             print ("TypeError for ", parsed)
