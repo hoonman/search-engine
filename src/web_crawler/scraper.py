@@ -3,6 +3,7 @@ import json
 import time
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, urlsplit, urlunsplit
+from urllib.robotparser import RobotFileParser
 from utils import get_logger
 
 class Scraper:
@@ -13,6 +14,7 @@ class Scraper:
         self.config = config # we can use this for similarity threshold later.
         self.start_time = time.time()
         self.subdomains = {}
+        self.robot_parser = RobotFileParser()
 
     def scraper(self, url, resp):
         self.unique_links.add(url)
@@ -21,11 +23,10 @@ class Scraper:
             extracted_links = self.extract_next_links(url, resp)
             valid_links = []
             for link in extracted_links:
-                if self.is_valid(link):
-                    if link not in self.unique_links:
-                        self.unique_links.add(link)
-                        defrag_link = self.defragment_link(link)
-                        valid_links.append(defrag_link)
+                if self.is_valid(link) and (link not in self.unique_links):
+                    self.unique_links.add(link)
+                    defrag_link = self.defragment_link(link)
+                    valid_links.append(defrag_link)
             self.logger.info(f"Found {len(valid_links)} new valid links from {url}")
             return valid_links
         except Exception as e:
@@ -54,9 +55,9 @@ class Scraper:
     def is_valid(self, url):
         try:
             parsed = urlparse(url)
-            if parsed.scheme not in set(["http", "https"]):
-                return False
-            if not self.filter_valid_domains(url, parsed):
+            if parsed.scheme not in set(["http", "https"]) and not self.filter_valid_domains(url, parsed) and (not self.robot_parser.can_fetch("UserAgent", url)):
+                if not self.robot_parser.can_fetch("UserAgent", url):
+                    print(f"unable to parse robots for url: {url}")
                 return False
             disallowed_extensions = (r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml" 
             + r"|png|tiff?|mid|mp2|mp3|mp4"
