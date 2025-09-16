@@ -17,4 +17,4 @@ Pop the latest link from our frontier (stack), extract valid links, and add new 
 4. Must not contain any disallowed extensions (ex. pdf, png, img, mp4, etc)
 5. The content of the new page must not be over 90% similar than any of the web pages we have encountered
 6. Must contain valid domain (A2 requirement)
-7. 
+7. Respect disallowed sites with robots.txt
