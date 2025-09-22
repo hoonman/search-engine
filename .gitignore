@@ -2,3 +2,4 @@
 *.pyc
 /esdenv
 /report
+whiteboard.py
