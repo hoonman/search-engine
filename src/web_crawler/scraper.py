@@ -16,6 +16,7 @@ class Scraper:
         self.subdomains = {}
         self.robot_parser = RobotFileParser()
         self.robots_cache = {}
+        self.robots_delay = {}
         self.agent_name = "ICSCrawler"
 
     def scraper(self, url, resp):
@@ -60,13 +61,15 @@ class Scraper:
             if parsed.scheme not in set(["http", "https"]):
                 return False
                 
-            if not self.filter_valid_domains(url, parsed):
-                return False
-
             robots_parser = self.get_robots_parser(url, parsed)
+            self.check_robots_delay(url, parsed)
             if robots_parser and not robots_parser.can_fetch(self.agent_name, url):
                 self.logger.debug(f"Robots.txt disallows crawling: {url}")
                 return False
+                
+            if not self.filter_valid_domains(url, parsed):
+                return False
+
             disallowed_extensions = (r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml" 
             + r"|png|tiff?|mid|mp2|mp3|mp4"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
@@ -139,7 +142,6 @@ class Scraper:
         try:
             rp.read()
             self.robots_cache[robots_url] = rp
-            self.logger.debug(f"successfully loaded robots.txt from {robots_url}")
             return rp
         except Exception as e:
             self.logger.warning(f"could not read robots.txt from {robots_url}: {e}")
@@ -153,10 +155,12 @@ class Scraper:
         if rp:
             delay = rp.crawl_delay(self.agent_name)
             if delay:
-                # implement delay logic here
-                # ideally, we want a map of urls with specific delays and use them instead of the config delay.
-                return True
-        return True
+                self.robots_delay[url] = delay
+
+    def get_robots_delay(self, url):
+        if url in self.robots_delay:
+            return self.robots_delay[url]
+        return self.config.time_delay
 
 
     def append_to_json_file(self, filename, data):
