@@ -15,6 +15,8 @@ class Scraper:
         self.start_time = time.time()
         self.subdomains = {}
         self.robot_parser = RobotFileParser()
+        self.robots_cache = {}
+        self.agent_name = "ICSCrawler"
 
     def scraper(self, url, resp):
         self.unique_links.add(url)
@@ -55,9 +57,15 @@ class Scraper:
     def is_valid(self, url):
         try:
             parsed = urlparse(url)
-            if parsed.scheme not in set(["http", "https"]) and not self.filter_valid_domains(url, parsed) and (not self.robot_parser.can_fetch("UserAgent", url)):
-                if not self.robot_parser.can_fetch("UserAgent", url):
-                    print(f"unable to parse robots for url: {url}")
+            if parsed.scheme not in set(["http", "https"]):
+                return False
+                
+            if not self.filter_valid_domains(url, parsed):
+                return False
+
+            robots_parser = self.get_robots_parser(url, parsed)
+            if robots_parser and not robots_parser.can_fetch(self.agent_name, url):
+                self.logger.debug(f"Robots.txt disallows crawling: {url}")
                 return False
             disallowed_extensions = (r".*\.(css|js|bmp|gif|jpe?g|ico|img|apk|sql|webp|svg|json|xml|woff2?|tsx?|jsx|ya?ml" 
             + r"|png|tiff?|mid|mp2|mp3|mp4"
@@ -110,6 +118,46 @@ class Scraper:
                 self.subdomains[scheme_hostname] += 1
             else:
                 self.subdomains[scheme_hostname] = 1
+
+    def get_robots_parser(self, url, parsed):
+        '''
+        takes url that we are validating, parsed object from urlparse and returns a robots parser using RobotFileParser
+        '''
+        try:
+            robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
+            if robots_url in self.robots_cache:
+                return self.robots_cache[robots_url]
+
+            rp = RobotFileParser()
+            rp.set_url(robots_url)
+            return self.load_robots_parser(rp, robots_url)
+        except Exception as e:
+            self.logger.error(f"Error creating robots parser for {url}: {e}")
+            return None
+
+    def load_robots_parser(self, rp, robots_url):
+        try:
+            rp.read()
+            self.robots_cache[robots_url] = rp
+            self.logger.debug(f"successfully loaded robots.txt from {robots_url}")
+            return rp
+        except Exception as e:
+            self.logger.warning(f"could not read robots.txt from {robots_url}: {e}")
+            fallback_rp = RobotFileParser()
+            fallback_rp.set_url(robots_url)
+            self.robots_cache[robots_url] = fallback_rp
+            return fallback_rp
+
+    def check_robots_delay(self, url, parsed):
+        rp = self.get_robots_parser(url, parsed)
+        if rp:
+            delay = rp.crawl_delay(self.agent_name)
+            if delay:
+                # implement delay logic here
+                # ideally, we want a map of urls with specific delays and use them instead of the config delay.
+                return True
+        return True
+
 
     def append_to_json_file(self, filename, data):
         try:
