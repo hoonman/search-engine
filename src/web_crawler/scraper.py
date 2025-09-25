@@ -19,6 +19,8 @@ class Scraper:
         self.robots_delay = {}
         self.agent_name = "ICSCrawler"
 
+        # similarity url tracking
+
     def scraper(self, url, resp):
         self.unique_links.add(url)
 
@@ -49,8 +51,7 @@ class Scraper:
         if resp.raw_response and resp.raw_response['content']:
             soup = BeautifulSoup(resp.raw_response['content'], "lxml")
             for link in soup.find_all('a'):
-                parsed_url = link.get('href')
-                joined_url = urljoin(url, parsed_url)
+                joined_url = urljoin(url, link.get('href'))
                 extracted_links.add(joined_url)
         extracted_links.difference_update(self.unique_links) # from extracted links remove all links that exist already in unique links
         return extracted_links
@@ -162,6 +163,8 @@ class Scraper:
             return self.robots_delay[url]
         return self.config.time_delay
 
+    def normalize_url(self):
+        pass
 
     def append_to_json_file(self, filename, data):
         try:
