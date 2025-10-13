@@ -44,4 +44,4 @@ class Worker(Thread):
                 self.frontier.add_url(scraped_url)
             self.frontier.mark_url_complete(tbd_url)
             self.page_count += 1
-            time.sleep(self.scraper.get_robots_delay(tbd_url))
+            time.sleep(self.scraper.robots_parser.get_robots_delay(tbd_url))
