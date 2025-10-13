@@ -20,3 +20,9 @@ frontier.
 * we must solve crashing issue but i feel like similarity detection will solve it automatically. so lets do this first and see if the crashing will be gone. 
 * defragment links resolved the crashing issues.
 * calendar traps 
+
+
+
+
+## crawler report
+* add the actual time the report finished (time.now into the json file)
