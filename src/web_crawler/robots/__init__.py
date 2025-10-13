@@ -55,5 +55,11 @@ class RobotsParser:
         return self.robots_parser.can_fetch(agent_name, url)
 
 
-    def check_robots(self, url, parsed, agent_name):
+    def check_robots(self, url, parsed):
         '''get the robot parser, check robot delay, and finally check if we can fetch using robots'''
+        robots_parser = self.get_robots_parser(url, parsed)
+        self.check_robots_delay(url, parsed)
+        if robots_parser and not robots_parser.can_fetch(self.agent_name, url):
+            self.logger.debug(f"Robots.txt disallows crawling: {url}")
+            return False
+        return True
