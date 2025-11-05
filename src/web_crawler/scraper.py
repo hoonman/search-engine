@@ -11,26 +11,31 @@ class Scraper:
     def __init__(self, config):
         self.logger = get_logger(f"Scraper", "SCRAPER")
         self.unique_links = set()
-        self.defragmented_links = set()
         self.config = config # we can use this for similarity threshold later.
         self.start_time = time.time()
         self.subdomains = {}
         self.agent_name = "ICSCrawler"
         self.robots_parser = RobotsParser(self.agent_name, config)
-        self.exact_dup_detectpr = ExactDupDetector()
+        self.exact_dup_detector = ExactDupDetector()
         
         # similarity url tracking
 
     def scraper(self, url, resp):
-        self.unique_links.add(url)
+        valid_links = []
+        self.unique_links.add(self.defragment_link(url))
 
         try:
+            if not self.validate_response(resp):
+                return []
+            if self.exact_dup_detector.is_exact_duplicate(resp.raw_response['content']):
+                return []
             extracted_links = self.extract_next_links(url, resp)
-            valid_links = []
             for link in extracted_links:
-                if self.is_valid(link) and (link not in self.unique_links):
-                    self.unique_links.add(link)
-                    defrag_link = self.defragment_link(link)
+                defrag_link = self.defragment_link(link)
+                # extracted_links.difference_update(self.unique_links) # from extracted links remove all links that exist already in unique links 
+                # we no longer need difference update here since we are checking if defrag link is in unique links.
+                if self.is_valid(defrag_link) and defrag_link not in self.unique_links:
+                    self.unique_links.add(defrag_link)
                     valid_links.append(defrag_link)
             self.logger.info(f"Found {len(valid_links)} new valid links from {url}")
             return valid_links
@@ -43,18 +48,23 @@ class Scraper:
                     "timestamp": time.time()
                 })
 
+    def validate_response(self, resp):
+        if resp.status != 200:
+            return False
+
+        if not resp or not resp.raw_response or not resp.raw_response['content']:
+            return False
+
+        return True
+
     def extract_next_links(self, url, resp):
         extracted_links = set()
-        if resp.status != 200:
-            return []
+        soup = BeautifulSoup(resp.raw_response['content'], "lxml")
 
-        if resp.raw_response and resp.raw_response['content']:
-            soup = BeautifulSoup(resp.raw_response['content'], "lxml")
-            for link in soup.find_all('a'):
-                joined_url = urljoin(url, link.get('href'))
-                extracted_links.add(joined_url)
+        for link in soup.find_all('a'):
+            joined_url = urljoin(url, link.get('href'))
+            extracted_links.add(joined_url)
 
-        extracted_links.difference_update(self.unique_links) # from extracted links remove all links that exist already in unique links
         return extracted_links
 
     def is_valid(self, url):
@@ -88,8 +98,6 @@ class Scraper:
     def defragment_link(self, url):
         parts = urlsplit(url)
         defragmented_url = urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, ""))
-        if defragmented_url not in self.defragmented_links:
-            self.defragmented_links.add(defragmented_url)
         return defragmented_url
         
 
@@ -146,7 +154,7 @@ class Scraper:
         end_time = time.time()
         total_time = end_time - self.start_time
         report_data = {
-            "unique_link_count": len(list(self.defragmented_links)),
+            "unique_link_count": len(list(self.unique_links)),
             "time_elapsed": total_time,
             "subdomain_counts": self.subdomains,
             "finish_reason": finish_reason
