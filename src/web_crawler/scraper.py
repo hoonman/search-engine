@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin, urlsplit, urlunsplit
 from robots import RobotsParser
 from utils import get_logger
+from dup_detector import ExactDupDetector
 
 class Scraper:
     def __init__(self, config):
@@ -16,7 +17,8 @@ class Scraper:
         self.subdomains = {}
         self.agent_name = "ICSCrawler"
         self.robots_parser = RobotsParser(self.agent_name, config)
-
+        self.exact_dup_detectpr = ExactDupDetector()
+        
         # similarity url tracking
 
     def scraper(self, url, resp):
@@ -51,6 +53,7 @@ class Scraper:
             for link in soup.find_all('a'):
                 joined_url = urljoin(url, link.get('href'))
                 extracted_links.add(joined_url)
+
         extracted_links.difference_update(self.unique_links) # from extracted links remove all links that exist already in unique links
         return extracted_links
 
@@ -111,6 +114,9 @@ class Scraper:
             return False
 
     def is_subdomain(self, domain, filtered_host, parsed_url):
+        ''' 
+        function determines if the url we are looking at is part of ics.uci.edu or any other valid domain.
+        '''
         if filtered_host == domain or (filtered_host == ("." + domain)):
             scheme_hostname = parsed_url.scheme + "://" + parsed_url.hostname
             if domain in self.subdomains:
